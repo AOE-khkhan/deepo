@@ -14,8 +14,7 @@ class Tensorflow(Module):
             raise NotImplementedError('unsupported tensorflow version')
 
     def build(self):
-        is_gpu = '' if self.composer.cuda_ver is None else '-gpu'
-        tensorflow_version = ('tensorflow%s' % is_gpu) if self.version == 'latest' else ("tensorflow%s==%s" % (is_gpu, self.version))
+        tensorflow_version = 'tensorflow%s' % ('' if self.version == 'latest' else '==%s' % self.version)
         return r'''
             $PIP_INSTALL \
                 %s \
