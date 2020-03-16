@@ -45,9 +45,9 @@ def get_tags(postfix,
         for t in list(tags):
             tags.append(t.replace('all', 'all-jupyter'))
 
-    for t in list(tags):
-        if 'latest' not in t:
-            tags.append('%s-ver%s' % (t, datetime.datetime.now().strftime('%y%m%d')))
+    # for t in list(tags):
+    #     if 'latest' not in t:
+    #         tags.append('%s-ver%s' % (t, datetime.datetime.now().strftime('%y%m%d')))
 
     return tags
 
@@ -110,6 +110,8 @@ def generate(ci_fname):
 
     job_names = []
     for fn in os.listdir(os.path.join('..', 'docker')):
+        if not fn.startswith('Dockerfile'):
+            continue
         postfix = fn.split('.')[-1]
         tags = get_tags(postfix)
         job_name, build_scripts = get_job(tags)
