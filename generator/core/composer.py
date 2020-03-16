@@ -95,7 +95,7 @@ class Composer(object):
             ordered = set(item for item, dep in data.items() if len(dep) == 0)
             if not ordered:
                 break
-            for m in sorted(ordered, key=lambda m: m.__name__):
+            for m in sorted(ordered, key=lambda m: m.priority)[::-1]:
                 yield m
             data = {
                 item: (dep - ordered)

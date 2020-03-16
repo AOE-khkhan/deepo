@@ -7,6 +7,8 @@ from .python import Python
 @source('pip')
 class Pytorch(Module):
 
+    priority = 1
+
     def build(self):
         cuver = 'cpu' if self.composer.cuda_ver is None else 'cu%d' % (
             float(self.composer.cuda_ver) * 10)

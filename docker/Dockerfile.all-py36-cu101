@@ -2,21 +2,21 @@
 # module list
 # ------------------------------------------------------------------
 # darknet       latest (git)
-# python        3.6    (apt)
 # torch         latest (git)
+# python        3.6    (apt)
+# pytorch       latest (pip)
 # chainer       latest (pip)
-# jupyter       latest (pip)
 # mxnet         latest (pip)
 # onnx          latest (pip)
-# pytorch       latest (pip)
-# tensorflow    latest (pip)
+# jupyter       latest (pip)
 # theano        latest (git)
-# keras         latest (pip)
-# lasagne       latest (git)
+# tensorflow    latest (pip)
 # opencv        4.1.2  (git)
+# lasagne       latest (git)
 # sonnet        latest (pip)
-# caffe         latest (git)
+# keras         latest (pip)
 # cntk          latest (pip)
+# caffe         latest (git)
 # ==================================================================
 
 FROM nvidia/cuda:10.1-cudnn7-devel-ubuntu18.04
@@ -68,6 +68,20 @@ RUN APT_INSTALL="apt-get install -y --no-install-recommends" && \
     cp ~/darknet/darknet /usr/local/bin && \
 
 # ==================================================================
+# torch
+# ------------------------------------------------------------------
+
+    DEBIAN_FRONTEND=noninteractive $APT_INSTALL \
+        sudo \
+        && \
+
+    $GIT_CLONE https://github.com/nagadomi/distro.git ~/torch --recursive && \
+    cd ~/torch && \
+    bash install-deps && \
+    sed -i 's/${THIS_DIR}\/install/\/usr\/local/g' ./install.sh && \
+    ./install.sh && \
+
+# ==================================================================
 # python
 # ------------------------------------------------------------------
 
@@ -102,28 +116,21 @@ RUN APT_INSTALL="apt-get install -y --no-install-recommends" && \
         && \
 
 # ==================================================================
-# torch
+# pytorch
 # ------------------------------------------------------------------
 
-    DEBIAN_FRONTEND=noninteractive $APT_INSTALL \
-        sudo \
+    $PIP_INSTALL \
+        future \
+        numpy \
+        protobuf \
+        enum34 \
+        pyyaml \
+        typing \
         && \
-
-    $GIT_CLONE https://github.com/nagadomi/distro.git ~/torch --recursive && \
-    cd ~/torch && \
-    bash install-deps && \
-    sed -i 's/${THIS_DIR}\/install/\/usr\/local/g' ./install.sh && \
-    ./install.sh && \
-
-# ==================================================================
-# boost
-# ------------------------------------------------------------------
-
-    wget -O ~/boost.tar.gz https://dl.bintray.com/boostorg/release/1.69.0/source/boost_1_69_0.tar.gz && \
-    tar -zxf ~/boost.tar.gz -C ~ && \
-    cd ~/boost_* && \
-    ./bootstrap.sh --with-python=python3.6 && \
-    ./b2 install -j"$(nproc)" --prefix=/usr/local && \
+    $PIP_INSTALL \
+        --pre torch torchvision -f \
+        https://download.pytorch.org/whl/nightly/cu101/torch_nightly.html \
+        && \
 
 # ==================================================================
 # chainer
@@ -132,14 +139,6 @@ RUN APT_INSTALL="apt-get install -y --no-install-recommends" && \
     $PIP_INSTALL \
         cupy \
         chainer \
-        && \
-
-# ==================================================================
-# jupyter
-# ------------------------------------------------------------------
-
-    $PIP_INSTALL \
-        jupyter \
         && \
 
 # ==================================================================
@@ -174,28 +173,11 @@ RUN APT_INSTALL="apt-get install -y --no-install-recommends" && \
         && \
 
 # ==================================================================
-# pytorch
+# jupyter
 # ------------------------------------------------------------------
 
     $PIP_INSTALL \
-        future \
-        numpy \
-        protobuf \
-        enum34 \
-        pyyaml \
-        typing \
-        && \
-    $PIP_INSTALL \
-        --pre torch torchvision -f \
-        https://download.pytorch.org/whl/nightly/cu101/torch_nightly.html \
-        && \
-
-# ==================================================================
-# tensorflow
-# ------------------------------------------------------------------
-
-    $PIP_INSTALL \
-        tensorflow \
+        jupyter \
         && \
 
 # ==================================================================
@@ -223,22 +205,22 @@ RUN APT_INSTALL="apt-get install -y --no-install-recommends" && \
         && \
 
 # ==================================================================
-# keras
+# tensorflow
 # ------------------------------------------------------------------
 
     $PIP_INSTALL \
-        h5py \
-        keras \
+        tensorflow \
         && \
 
 # ==================================================================
-# lasagne
+# boost
 # ------------------------------------------------------------------
 
-    $GIT_CLONE https://github.com/Lasagne/Lasagne ~/lasagne && \
-    cd ~/lasagne && \
-    $PIP_INSTALL \
-        . && \
+    wget -O ~/boost.tar.gz https://dl.bintray.com/boostorg/release/1.69.0/source/boost_1_69_0.tar.gz && \
+    tar -zxf ~/boost.tar.gz -C ~ && \
+    cd ~/boost_* && \
+    ./bootstrap.sh --with-python=python3.6 && \
+    ./b2 install -j"$(nproc)" --prefix=/usr/local && \
 
 # ==================================================================
 # opencv
@@ -272,6 +254,15 @@ RUN APT_INSTALL="apt-get install -y --no-install-recommends" && \
     ln -s /usr/local/include/opencv4/opencv2 /usr/local/include/opencv2 && \
 
 # ==================================================================
+# lasagne
+# ------------------------------------------------------------------
+
+    $GIT_CLONE https://github.com/Lasagne/Lasagne ~/lasagne && \
+    cd ~/lasagne && \
+    $PIP_INSTALL \
+        . && \
+
+# ==================================================================
 # sonnet
 # ------------------------------------------------------------------
 
@@ -281,13 +272,14 @@ RUN APT_INSTALL="apt-get install -y --no-install-recommends" && \
         && \
 
 # ==================================================================
-# caffe
+# keras
 # ------------------------------------------------------------------
 
-    apt-get update && \
-    DEBIAN_FRONTEND=noninteractive $APT_INSTALL \
-        caffe-cuda \
+    $PIP_INSTALL \
+        h5py \
+        keras \
         && \
+
 # ==================================================================
 # cntk
 # ------------------------------------------------------------------
@@ -318,6 +310,14 @@ RUN APT_INSTALL="apt-get install -y --no-install-recommends" && \
         cntk-gpu \
         && \
 
+# ==================================================================
+# caffe
+# ------------------------------------------------------------------
+
+    apt-get update && \
+    DEBIAN_FRONTEND=noninteractive $APT_INSTALL \
+        caffe-cuda \
+        && \
 # ==================================================================
 # config & cleanup
 # ------------------------------------------------------------------

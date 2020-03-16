@@ -32,6 +32,8 @@ def version(module, _ver):
 @version('latest')
 class Module(object):
 
+    priority = 0
+
     def __init__(self, composer):
         self.composer = composer
 
