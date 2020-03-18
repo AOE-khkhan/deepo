@@ -59,7 +59,15 @@ def get_job(tags):
             runs-on: ubuntu-latest
             steps:
                 - uses: actions/checkout@master
+                - name: free disk space
+                  run: |
+                    sudo swapoff -a
+                    sudo rm -f /swapfile
+                    sudo apt clean
+                    docker rmi $(docker image ls -aq)
+                    df -h
                 - run: docker build %s -f docker/Dockerfile.%s .
+                - run: df -h
                 - run: docker login -u ${{secrets.DOCKER_USER}} -p ${{secrets.DOCKER_PASS}}''' % (
                     job_name,
                     ' '.join('-t ${{secrets.DOCKER_REPO}}:%s' % tag for tag in tags),

@@ -1,20 +1,20 @@
 # ==================================================================
 # module list
 # ------------------------------------------------------------------
-# darknet       latest (git)
 # torch         latest (git)
+# darknet       latest (git)
 # python        3.6    (apt)
 # pytorch       latest (pip)
-# chainer       latest (pip)
-# mxnet         latest (pip)
-# onnx          latest (pip)
 # jupyter       latest (pip)
+# mxnet         latest (pip)
 # theano        latest (git)
 # tensorflow    latest (pip)
+# onnx          latest (pip)
+# chainer       latest (pip)
 # opencv        4.1.2  (git)
-# lasagne       latest (git)
-# sonnet        latest (pip)
 # keras         latest (pip)
+# sonnet        latest (pip)
+# lasagne       latest (git)
 # cntk          latest (pip)
 # caffe         latest (git)
 # ==================================================================
@@ -54,20 +54,6 @@ RUN APT_INSTALL="apt-get install -y --no-install-recommends" && \
     make -j"$(nproc)" install && \
 
 # ==================================================================
-# darknet
-# ------------------------------------------------------------------
-
-    $GIT_CLONE https://github.com/pjreddie/darknet.git ~/darknet && \
-    cd ~/darknet && \
-    sed -i 's/GPU=0/GPU=1/g' ~/darknet/Makefile && \
-    sed -i 's/CUDNN=0/CUDNN=1/g' ~/darknet/Makefile && \
-    make -j"$(nproc)" && \
-    cp ~/darknet/include/* /usr/local/include && \
-    cp ~/darknet/*.a /usr/local/lib && \
-    cp ~/darknet/*.so /usr/local/lib && \
-    cp ~/darknet/darknet /usr/local/bin && \
-
-# ==================================================================
 # torch
 # ------------------------------------------------------------------
 
@@ -80,6 +66,20 @@ RUN APT_INSTALL="apt-get install -y --no-install-recommends" && \
     bash install-deps && \
     sed -i 's/${THIS_DIR}\/install/\/usr\/local/g' ./install.sh && \
     ./install.sh && \
+
+# ==================================================================
+# darknet
+# ------------------------------------------------------------------
+
+    $GIT_CLONE https://github.com/pjreddie/darknet.git ~/darknet && \
+    cd ~/darknet && \
+    sed -i 's/GPU=0/GPU=1/g' ~/darknet/Makefile && \
+    sed -i 's/CUDNN=0/CUDNN=1/g' ~/darknet/Makefile && \
+    make -j"$(nproc)" && \
+    cp ~/darknet/include/* /usr/local/include && \
+    cp ~/darknet/*.a /usr/local/lib && \
+    cp ~/darknet/*.so /usr/local/lib && \
+    cp ~/darknet/darknet /usr/local/bin && \
 
 # ==================================================================
 # python
@@ -133,12 +133,11 @@ RUN APT_INSTALL="apt-get install -y --no-install-recommends" && \
         && \
 
 # ==================================================================
-# chainer
+# jupyter
 # ------------------------------------------------------------------
 
     $PIP_INSTALL \
-        cupy \
-        chainer \
+        jupyter \
         && \
 
 # ==================================================================
@@ -153,31 +152,6 @@ RUN APT_INSTALL="apt-get install -y --no-install-recommends" && \
     $PIP_INSTALL \
         mxnet-cu101 \
         graphviz \
-        && \
-
-# ==================================================================
-# onnx
-# ------------------------------------------------------------------
-
-    DEBIAN_FRONTEND=noninteractive $APT_INSTALL \
-        protobuf-compiler \
-        libprotoc-dev \
-        && \
-
-    $PIP_INSTALL \
-        --no-binary onnx onnx \
-        && \
-
-    $PIP_INSTALL \
-        onnxruntime \
-        && \
-
-# ==================================================================
-# jupyter
-# ------------------------------------------------------------------
-
-    $PIP_INSTALL \
-        jupyter \
         && \
 
 # ==================================================================
@@ -213,6 +187,23 @@ RUN APT_INSTALL="apt-get install -y --no-install-recommends" && \
         && \
 
 # ==================================================================
+# onnx
+# ------------------------------------------------------------------
+
+    DEBIAN_FRONTEND=noninteractive $APT_INSTALL \
+        protobuf-compiler \
+        libprotoc-dev \
+        && \
+
+    $PIP_INSTALL \
+        --no-binary onnx onnx \
+        && \
+
+    $PIP_INSTALL \
+        onnxruntime \
+        && \
+
+# ==================================================================
 # boost
 # ------------------------------------------------------------------
 
@@ -221,6 +212,15 @@ RUN APT_INSTALL="apt-get install -y --no-install-recommends" && \
     cd ~/boost_* && \
     ./bootstrap.sh --with-python=python3.6 && \
     ./b2 install -j"$(nproc)" --prefix=/usr/local && \
+
+# ==================================================================
+# chainer
+# ------------------------------------------------------------------
+
+    $PIP_INSTALL \
+        cupy \
+        chainer \
+        && \
 
 # ==================================================================
 # opencv
@@ -254,13 +254,13 @@ RUN APT_INSTALL="apt-get install -y --no-install-recommends" && \
     ln -s /usr/local/include/opencv4/opencv2 /usr/local/include/opencv2 && \
 
 # ==================================================================
-# lasagne
+# keras
 # ------------------------------------------------------------------
 
-    $GIT_CLONE https://github.com/Lasagne/Lasagne ~/lasagne && \
-    cd ~/lasagne && \
     $PIP_INSTALL \
-        . && \
+        h5py \
+        keras \
+        && \
 
 # ==================================================================
 # sonnet
@@ -272,13 +272,13 @@ RUN APT_INSTALL="apt-get install -y --no-install-recommends" && \
         && \
 
 # ==================================================================
-# keras
+# lasagne
 # ------------------------------------------------------------------
 
+    $GIT_CLONE https://github.com/Lasagne/Lasagne ~/lasagne && \
+    cd ~/lasagne && \
     $PIP_INSTALL \
-        h5py \
-        keras \
-        && \
+        . && \
 
 # ==================================================================
 # cntk
