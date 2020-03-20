@@ -1,16 +1,16 @@
 # ==================================================================
 # module list
 # ------------------------------------------------------------------
-# torch         latest (git)
 # darknet       latest (git)
+# torch         latest (git)
 # python        3.6    (apt)
 # pytorch       latest (pip)
-# jupyter       latest (pip)
-# mxnet         latest (pip)
+# onnx          latest (pip)
 # theano        latest (git)
 # tensorflow    latest (pip)
-# onnx          latest (pip)
 # chainer       latest (pip)
+# jupyter       latest (pip)
+# mxnet         latest (pip)
 # opencv        4.1.2  (git)
 # keras         latest (pip)
 # sonnet        latest (pip)
@@ -22,13 +22,18 @@
 FROM nvidia/cuda:10.1-cudnn7-devel-ubuntu18.04
 ENV LANG C.UTF-8
 RUN APT_INSTALL="apt-get install -y --no-install-recommends" && \
-    PIP_INSTALL="python -m pip --no-cache-dir install --upgrade" && \
+    PIP_INSTALL="python -m pip install --upgrade --no-cache-dir --retries 10 --timeout 60" && \
     GIT_CLONE="git clone --depth 10" && \
 
     rm -rf /var/lib/apt/lists/* \
            /etc/apt/sources.list.d/cuda.list \
            /etc/apt/sources.list.d/nvidia-ml.list && \
 
+    apt-get update && \
+    DEBIAN_FRONTEND=noninteractive $APT_INSTALL \
+        software-properties-common \
+        && \
+    add-apt-repository "deb http://security.ubuntu.com/ubuntu xenial-security main" && \
     apt-get update && \
 
 # ==================================================================
@@ -54,20 +59,6 @@ RUN APT_INSTALL="apt-get install -y --no-install-recommends" && \
     make -j"$(nproc)" install && \
 
 # ==================================================================
-# torch
-# ------------------------------------------------------------------
-
-    DEBIAN_FRONTEND=noninteractive $APT_INSTALL \
-        sudo \
-        && \
-
-    $GIT_CLONE https://github.com/nagadomi/distro.git ~/torch --recursive && \
-    cd ~/torch && \
-    bash install-deps && \
-    sed -i 's/${THIS_DIR}\/install/\/usr\/local/g' ./install.sh && \
-    ./install.sh && \
-
-# ==================================================================
 # darknet
 # ------------------------------------------------------------------
 
@@ -80,6 +71,20 @@ RUN APT_INSTALL="apt-get install -y --no-install-recommends" && \
     cp ~/darknet/*.a /usr/local/lib && \
     cp ~/darknet/*.so /usr/local/lib && \
     cp ~/darknet/darknet /usr/local/bin && \
+
+# ==================================================================
+# torch
+# ------------------------------------------------------------------
+
+    DEBIAN_FRONTEND=noninteractive $APT_INSTALL \
+        sudo \
+        && \
+
+    $GIT_CLONE https://github.com/nagadomi/distro.git ~/torch --recursive && \
+    cd ~/torch && \
+    bash install-deps && \
+    sed -i 's/${THIS_DIR}\/install/\/usr\/local/g' ./install.sh && \
+    ./install.sh && \
 
 # ==================================================================
 # python
@@ -133,25 +138,20 @@ RUN APT_INSTALL="apt-get install -y --no-install-recommends" && \
         && \
 
 # ==================================================================
-# jupyter
-# ------------------------------------------------------------------
-
-    $PIP_INSTALL \
-        jupyter \
-        && \
-
-# ==================================================================
-# mxnet
+# onnx
 # ------------------------------------------------------------------
 
     DEBIAN_FRONTEND=noninteractive $APT_INSTALL \
-        libatlas-base-dev \
-        graphviz \
+        protobuf-compiler \
+        libprotoc-dev \
         && \
 
     $PIP_INSTALL \
-        mxnet-cu101 \
-        graphviz \
+        --no-binary onnx onnx \
+        && \
+
+    $PIP_INSTALL \
+        onnxruntime \
         && \
 
 # ==================================================================
@@ -187,23 +187,6 @@ RUN APT_INSTALL="apt-get install -y --no-install-recommends" && \
         && \
 
 # ==================================================================
-# onnx
-# ------------------------------------------------------------------
-
-    DEBIAN_FRONTEND=noninteractive $APT_INSTALL \
-        protobuf-compiler \
-        libprotoc-dev \
-        && \
-
-    $PIP_INSTALL \
-        --no-binary onnx onnx \
-        && \
-
-    $PIP_INSTALL \
-        onnxruntime \
-        && \
-
-# ==================================================================
 # boost
 # ------------------------------------------------------------------
 
@@ -223,19 +206,43 @@ RUN APT_INSTALL="apt-get install -y --no-install-recommends" && \
         && \
 
 # ==================================================================
-# opencv
+# jupyter
+# ------------------------------------------------------------------
+
+    $PIP_INSTALL \
+        jupyter \
+        && \
+
+# ==================================================================
+# mxnet
 # ------------------------------------------------------------------
 
     DEBIAN_FRONTEND=noninteractive $APT_INSTALL \
         libatlas-base-dev \
-        libgflags-dev \
-        libgoogle-glog-dev \
-        libhdf5-serial-dev \
-        libleveldb-dev \
-        liblmdb-dev \
-        libprotobuf-dev \
-        libsnappy-dev \
-        protobuf-compiler \
+        graphviz \
+        && \
+
+    $PIP_INSTALL \
+        mxnet-cu101 \
+        graphviz \
+        && \
+
+# ==================================================================
+# opencv
+# ------------------------------------------------------------------
+
+    DEBIAN_FRONTEND=noninteractive $APT_INSTALL \
+        pkg-config \
+        libavcodec-dev \
+        libavformat-dev \
+        libswscale-dev \
+        libtbb2 \
+        libtbb-dev \
+        libjpeg-dev \
+        libpng-dev \
+        libtiff-dev \
+        libjasper-dev \
+        libdc1394-22-dev \
         && \
 
     $GIT_CLONE --branch 4.1.2 https://github.com/opencv/opencv ~/opencv && \
@@ -249,6 +256,7 @@ RUN APT_INSTALL="apt-get install -y --no-install-recommends" && \
           -D BUILD_PERF_TESTS=OFF \
           -D BUILD_DOCS=OFF \
           -D BUILD_EXAMPLES=OFF \
+          -D WITH_LIBV4L=ON \
           .. && \
     make -j"$(nproc)" install && \
     ln -s /usr/local/include/opencv4/opencv2 /usr/local/include/opencv2 && \
@@ -327,4 +335,4 @@ RUN APT_INSTALL="apt-get install -y --no-install-recommends" && \
     apt-get autoremove && \
     rm -rf /var/lib/apt/lists/* /tmp/* ~/*
 
-EXPOSE 8888 6006
+EXPOSE 6006 8888

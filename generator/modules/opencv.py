@@ -13,15 +13,17 @@ class Opencv(Module):
     def build(self):
         return r'''
             DEBIAN_FRONTEND=noninteractive $APT_INSTALL \
-                libatlas-base-dev \
-                libgflags-dev \
-                libgoogle-glog-dev \
-                libhdf5-serial-dev \
-                libleveldb-dev \
-                liblmdb-dev \
-                libprotobuf-dev \
-                libsnappy-dev \
-                protobuf-compiler \
+                pkg-config \
+                libavcodec-dev \
+                libavformat-dev \
+                libswscale-dev \
+                libtbb2 \
+                libtbb-dev \
+                libjpeg-dev \
+                libpng-dev \
+                libtiff-dev \
+                libjasper-dev \
+                libdc1394-22-dev \
                 && \
 
             $GIT_CLONE --branch %s https://github.com/opencv/opencv ~/opencv && \
@@ -35,6 +37,7 @@ class Opencv(Module):
                   -D BUILD_PERF_TESTS=OFF \
                   -D BUILD_DOCS=OFF \
                   -D BUILD_EXAMPLES=OFF \
+                  -D WITH_LIBV4L=ON \
                   .. && \
             make -j"$(nproc)" install && \
             ln -s /usr/local/include/opencv4/opencv2 /usr/local/include/opencv2 && \

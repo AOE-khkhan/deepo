@@ -1,20 +1,20 @@
 # ==================================================================
 # module list
 # ------------------------------------------------------------------
-# python        3.6    (apt)
-# darknet       latest (git)
 # torch         latest (git)
+# darknet       latest (git)
+# python        3.6    (apt)
 # pytorch       latest (pip)
-# tensorflow    latest (pip)
-# onnx          latest (pip)
-# chainer       latest (pip)
-# jupyter       latest (pip)
-# mxnet         latest (pip)
 # theano        latest (git)
-# lasagne       latest (git)
-# opencv        4.1.2  (git)
-# sonnet        latest (pip)
+# tensorflow    latest (pip)
+# jupyter       latest (pip)
+# chainer       latest (pip)
+# onnx          latest (pip)
+# mxnet         latest (pip)
 # keras         latest (pip)
+# sonnet        latest (pip)
+# opencv        4.1.2  (git)
+# lasagne       latest (git)
 # cntk          latest (pip)
 # caffe         latest (git)
 # ==================================================================
@@ -22,13 +22,18 @@
 FROM ubuntu:18.04
 ENV LANG C.UTF-8
 RUN APT_INSTALL="apt-get install -y --no-install-recommends" && \
-    PIP_INSTALL="python -m pip --no-cache-dir install --upgrade" && \
+    PIP_INSTALL="python -m pip install --upgrade --no-cache-dir --retries 10 --timeout 60" && \
     GIT_CLONE="git clone --depth 10" && \
 
     rm -rf /var/lib/apt/lists/* \
            /etc/apt/sources.list.d/cuda.list \
            /etc/apt/sources.list.d/nvidia-ml.list && \
 
+    apt-get update && \
+    DEBIAN_FRONTEND=noninteractive $APT_INSTALL \
+        software-properties-common \
+        && \
+    add-apt-repository "deb http://security.ubuntu.com/ubuntu xenial-security main" && \
     apt-get update && \
 
 # ==================================================================
@@ -52,6 +57,34 @@ RUN APT_INSTALL="apt-get install -y --no-install-recommends" && \
     cd ~/cmake && \
     ./bootstrap && \
     make -j"$(nproc)" install && \
+
+# ==================================================================
+# torch
+# ------------------------------------------------------------------
+
+    DEBIAN_FRONTEND=noninteractive $APT_INSTALL \
+        sudo \
+        && \
+
+    $GIT_CLONE https://github.com/nagadomi/distro.git ~/torch --recursive && \
+    cd ~/torch && \
+    bash install-deps && \
+    sed -i 's/${THIS_DIR}\/install/\/usr\/local/g' ./install.sh && \
+    ./install.sh && \
+
+# ==================================================================
+# darknet
+# ------------------------------------------------------------------
+
+    $GIT_CLONE https://github.com/pjreddie/darknet.git ~/darknet && \
+    cd ~/darknet && \
+    sed -i 's/GPU=0/GPU=0/g' ~/darknet/Makefile && \
+    sed -i 's/CUDNN=0/CUDNN=0/g' ~/darknet/Makefile && \
+    make -j"$(nproc)" && \
+    cp ~/darknet/include/* /usr/local/include && \
+    cp ~/darknet/*.a /usr/local/lib && \
+    cp ~/darknet/*.so /usr/local/lib && \
+    cp ~/darknet/darknet /usr/local/bin && \
 
 # ==================================================================
 # python
@@ -88,34 +121,6 @@ RUN APT_INSTALL="apt-get install -y --no-install-recommends" && \
         && \
 
 # ==================================================================
-# darknet
-# ------------------------------------------------------------------
-
-    $GIT_CLONE https://github.com/pjreddie/darknet.git ~/darknet && \
-    cd ~/darknet && \
-    sed -i 's/GPU=0/GPU=0/g' ~/darknet/Makefile && \
-    sed -i 's/CUDNN=0/CUDNN=0/g' ~/darknet/Makefile && \
-    make -j"$(nproc)" && \
-    cp ~/darknet/include/* /usr/local/include && \
-    cp ~/darknet/*.a /usr/local/lib && \
-    cp ~/darknet/*.so /usr/local/lib && \
-    cp ~/darknet/darknet /usr/local/bin && \
-
-# ==================================================================
-# torch
-# ------------------------------------------------------------------
-
-    DEBIAN_FRONTEND=noninteractive $APT_INSTALL \
-        sudo \
-        && \
-
-    $GIT_CLONE https://github.com/nagadomi/distro.git ~/torch --recursive && \
-    cd ~/torch && \
-    bash install-deps && \
-    sed -i 's/${THIS_DIR}\/install/\/usr\/local/g' ./install.sh && \
-    ./install.sh && \
-
-# ==================================================================
 # pytorch
 # ------------------------------------------------------------------
 
@@ -133,11 +138,31 @@ RUN APT_INSTALL="apt-get install -y --no-install-recommends" && \
         && \
 
 # ==================================================================
+# theano
+# ------------------------------------------------------------------
+
+    DEBIAN_FRONTEND=noninteractive $APT_INSTALL \
+        libblas-dev \
+        && \
+
+    $PIP_INSTALL \
+        https://github.com/Theano/Theano/archive/master.zip \
+        && \
+
+# ==================================================================
 # tensorflow
 # ------------------------------------------------------------------
 
     $PIP_INSTALL \
         tensorflow \
+        && \
+
+# ==================================================================
+# jupyter
+# ------------------------------------------------------------------
+
+    $PIP_INSTALL \
+        jupyter \
         && \
 
 # ==================================================================
@@ -149,6 +174,14 @@ RUN APT_INSTALL="apt-get install -y --no-install-recommends" && \
     cd ~/boost_* && \
     ./bootstrap.sh --with-python=python3.6 && \
     ./b2 install -j"$(nproc)" --prefix=/usr/local && \
+
+# ==================================================================
+# chainer
+# ------------------------------------------------------------------
+
+    $PIP_INSTALL \
+        chainer \
+        && \
 
 # ==================================================================
 # onnx
@@ -168,22 +201,6 @@ RUN APT_INSTALL="apt-get install -y --no-install-recommends" && \
         && \
 
 # ==================================================================
-# chainer
-# ------------------------------------------------------------------
-
-    $PIP_INSTALL \
-        chainer \
-        && \
-
-# ==================================================================
-# jupyter
-# ------------------------------------------------------------------
-
-    $PIP_INSTALL \
-        jupyter \
-        && \
-
-# ==================================================================
 # mxnet
 # ------------------------------------------------------------------
 
@@ -198,40 +215,39 @@ RUN APT_INSTALL="apt-get install -y --no-install-recommends" && \
         && \
 
 # ==================================================================
-# theano
+# keras
 # ------------------------------------------------------------------
 
-    DEBIAN_FRONTEND=noninteractive $APT_INSTALL \
-        libblas-dev \
-        && \
-
     $PIP_INSTALL \
-        https://github.com/Theano/Theano/archive/master.zip \
+        h5py \
+        keras \
         && \
 
 # ==================================================================
-# lasagne
+# sonnet
 # ------------------------------------------------------------------
 
-    $GIT_CLONE https://github.com/Lasagne/Lasagne ~/lasagne && \
-    cd ~/lasagne && \
     $PIP_INSTALL \
-        . && \
+        tensorflow_probability \
+        "dm-sonnet>=2.0.0b0" --pre \
+        && \
 
 # ==================================================================
 # opencv
 # ------------------------------------------------------------------
 
     DEBIAN_FRONTEND=noninteractive $APT_INSTALL \
-        libatlas-base-dev \
-        libgflags-dev \
-        libgoogle-glog-dev \
-        libhdf5-serial-dev \
-        libleveldb-dev \
-        liblmdb-dev \
-        libprotobuf-dev \
-        libsnappy-dev \
-        protobuf-compiler \
+        pkg-config \
+        libavcodec-dev \
+        libavformat-dev \
+        libswscale-dev \
+        libtbb2 \
+        libtbb-dev \
+        libjpeg-dev \
+        libpng-dev \
+        libtiff-dev \
+        libjasper-dev \
+        libdc1394-22-dev \
         && \
 
     $GIT_CLONE --branch 4.1.2 https://github.com/opencv/opencv ~/opencv && \
@@ -245,27 +261,19 @@ RUN APT_INSTALL="apt-get install -y --no-install-recommends" && \
           -D BUILD_PERF_TESTS=OFF \
           -D BUILD_DOCS=OFF \
           -D BUILD_EXAMPLES=OFF \
+          -D WITH_LIBV4L=ON \
           .. && \
     make -j"$(nproc)" install && \
     ln -s /usr/local/include/opencv4/opencv2 /usr/local/include/opencv2 && \
 
 # ==================================================================
-# sonnet
+# lasagne
 # ------------------------------------------------------------------
 
+    $GIT_CLONE https://github.com/Lasagne/Lasagne ~/lasagne && \
+    cd ~/lasagne && \
     $PIP_INSTALL \
-        tensorflow_probability \
-        "dm-sonnet>=2.0.0b0" --pre \
-        && \
-
-# ==================================================================
-# keras
-# ------------------------------------------------------------------
-
-    $PIP_INSTALL \
-        h5py \
-        keras \
-        && \
+        . && \
 
 # ==================================================================
 # cntk
